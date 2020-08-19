@@ -31,28 +31,18 @@ import azure.functions as func
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
-    ssl_opts = {
-                'ca_certs': DEFAULT_CA_BUNDLE_PATH,
-                'ssl_version': PROTOCOL_TLSv1_2,
-                }
-
-    auth_provider = PlainTextAuthProvider(
-    username=os.getenv('CASSANDRA_USERNAME'), password=os.getenv('PASSWORD'))
-    cluster = Cluster([os.getenv('CONTACTPOINT')], port = os.getenv('PORT'), auth_provider=auth_provider, ssl_options=ssl_opts)
-    
-    #
-    # TODO: this needs a retry due to transient connectivity issues
-    #
-    session = cluster.connect()
+    session = new_session(3)
 
     #<createKeyspace>
     logging.info("Creating Keyspace")
-    session.execute('CREATE KEYSPACE IF NOT EXISTS uprofile WITH replication = {\'class\': \'NetworkTopologyStrategy\', \'datacenter\' : \'1\' }')
+    session.execute(
+        'CREATE KEYSPACE IF NOT EXISTS uprofile WITH replication = {\'class\': \'NetworkTopologyStrategy\', \'datacenter\' : \'1\' }')
     #</createKeyspace>
 
     #<createTable>
     logging.info("Creating Table")
-    session.execute('CREATE TABLE IF NOT EXISTS uprofile.user (user_id int PRIMARY KEY, user_name text, user_bcity text)')
+    session.execute(
+        'CREATE TABLE IF NOT EXISTS uprofile.user (user_id int PRIMARY KEY, user_name text, user_bcity text)')
     #</createTable>
     
     #<insertRecords>
@@ -81,3 +71,31 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             "all good",
             status_code=200
     )
+
+def new_session(max_retries=3):
+    attempts = 0
+    delay = 3
+    ssl_opts = {
+                'ca_certs': DEFAULT_CA_BUNDLE_PATH,
+                'ssl_version': PROTOCOL_TLSv1_2,
+                }
+    auth_provider = PlainTextAuthProvider(
+        username=os.getenv('CASSANDRA_USERNAME'), 
+        password=os.getenv('PASSWORD'))
+
+    cluster = Cluster(
+        [os.getenv('CONTACTPOINT')], 
+        port = os.getenv('PORT'), 
+        auth_provider=auth_provider, 
+        ssl_options=ssl_opts)
+   
+    session = cluster.connect()
+    while attempts < max_retries:
+        try:
+            session = cluster.connect()
+            return session
+        except Exception as e:
+            logging.debug('Failed to create session', exc_info=e)
+        time.sleep(delay)
+        attempts = attempts + 1
+    raise Exception('Could not establish session after {attempts}'.format(attempts=attempts))
