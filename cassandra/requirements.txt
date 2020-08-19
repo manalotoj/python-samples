@@ -1,0 +1,5 @@
+azure-functions
+Cassandra-driver 
+prettytable
+requests
+pyopenssl
