@@ -13,7 +13,21 @@ import os, sys, json
 import logging
 import azure.functions as func
 
-
+#
+# Supports HTTP POST
+# Expects json in body of request
+# 
+# Example:
+#  
+# [
+#    {"userId": 10, "userName": "john", "userCity": "bad lands"},
+#    {"userId": 11, "userName": "george", "userCity": "concrete jungle"},
+#    {"userId": 12, "userName": "dalsim", "userCity": "sin city"}
+# ]
+# 
+# When running locally, this function will pause when debugging due to inability to resolve
+# cassandra-driver modules -- disregard these errors and continue debugging.
+#
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
@@ -25,6 +39,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     auth_provider = PlainTextAuthProvider(
     username=os.getenv('CASSANDRA_USERNAME'), password=os.getenv('PASSWORD'))
     cluster = Cluster([os.getenv('CONTACTPOINT')], port = os.getenv('PORT'), auth_provider=auth_provider, ssl_options=ssl_opts)
+    
+    #
+    # TODO: this needs a retry due to transient connectivity issues
+    #
     session = cluster.connect()
 
     #<createKeyspace>
