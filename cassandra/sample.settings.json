@@ -3,9 +3,9 @@
   "Values": {
     "AzureWebJobsStorage": "",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "username": "<cassandra-username>",
-    "password": "<cassandra-password>",
-    "contactPoint": "<cassandra-contactPoint>",
-    "port":"<cassandra-port>"
+    "CASSANDRA_USERNAME": "<cassandra-username>",
+    "PASSWORD": "<cassandra-password>",
+    "CONTACTPOINT": "<cassandra-contactPoint>",
+    "PORT":"<cassandra-port>"
   }
 }
