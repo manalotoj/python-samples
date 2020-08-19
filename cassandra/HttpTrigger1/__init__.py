@@ -23,8 +23,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 }
 
     auth_provider = PlainTextAuthProvider(
-    username=os.getenv('username'), password=os.getenv('password'))
-    cluster = Cluster([os.getenv('contactPoint')], port = os.getenv('port'), auth_provider=auth_provider, ssl_options=ssl_opts)
+    username=os.getenv('CASSANDRA_USERNAME'), password=os.getenv('PASSWORD'))
+    cluster = Cluster([os.getenv('CONTACTPOINT')], port = os.getenv('PORT'), auth_provider=auth_provider, ssl_options=ssl_opts)
     session = cluster.connect()
 
     #<createKeyspace>
@@ -47,7 +47,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.info(row)
         session.execute(
             "INSERT INTO uprofile.user (user_id, user_name, user_bcity) VALUES (%s, %s, %s)", 
-            [row["userId"], row["userName"], row["user"]])
+            [row["userId"], row["userName"], row["userRow"]])
     #</insertRecords>
 
     #<queryAllItems>
