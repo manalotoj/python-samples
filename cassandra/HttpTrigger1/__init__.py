@@ -65,7 +65,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.info(row)
         session.execute(
             "INSERT INTO uprofile.user (user_id, user_name, user_bcity) VALUES (%s, %s, %s)", 
-            [row["userId"], row["userName"], row["userRow"]])
+            [row["userId"], row["userName"], row["userCity"]])
     #</insertRecords>
 
     #<queryAllItems>
