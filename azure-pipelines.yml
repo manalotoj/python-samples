@@ -39,7 +39,7 @@ stages:
       inputs:
         versionSpec: '3.8.5'
     
-    - script: pip install -r requirements.txt
+    - script: pip install -r $(System.DefaultWorkingDirectory)/cassandra/requirements.txt
       displayName: 'Install requirements'
 
     - task: ArchiveFiles@2
