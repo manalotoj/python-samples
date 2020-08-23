@@ -51,7 +51,7 @@ stages:
         replaceExistingArchive: true
         verbose: true
     
-    - publish: $(System.ArtifactsStagingDirectory)/**/*.zip
+    - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
       artifact: funcapp
 
 - stage: DeployToDev
