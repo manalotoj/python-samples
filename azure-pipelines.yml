@@ -1,11 +1,11 @@
-trigger:
-  batch: true
-  branches:
-    include:
-      - master
-  paths:
-    exclude:
-      - pipelines
+#trigger:
+#  batch: true
+#  branches:
+#   include:
+#      - master
+#  paths:
+#    exclude:
+#      - pipelines
 
 parameters:
   - name: "azureSubscription"
@@ -74,22 +74,3 @@ stages:
               package: $(Pipeline.Workspace)/funcapp/*.zip
               appSettings: |
                 -SOME_KEY1 SOME_VAULE1 -SOME_KEY2 SOME_VALUE2
-            
-          
-
-          # create app settings for staging slot
-          # app setting is read from key vault via variable group defined outside of pipeline
-#          - task: AzureAppServiceSettings@1
-#            inputs:
-#              azureSubscription: $(azureSubscription)
-#              appName: 'appriss-poc-webapp1'
-#              resourceGroupName: 'rg-appriss-poc'
-#              slotName: 'staging'
-#              appSettings: |
-#                [
-#                   {
-#                    "name": "AppName",
-#                    "value": "$(appname)",
-#                    "slotSetting": false
-#                   }
-#                ]
