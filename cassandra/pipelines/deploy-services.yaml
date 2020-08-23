@@ -1,1 +1,62 @@
-# hello world
+parameters:
+  - name: "azureSubscription"
+    displayName: "Azure Subscription"
+    type: string
+
+variables:
+  appName:              'funky-fresh-001'
+  resourceGroup:        'rg-aa'
+  location:             'westus2'
+  storageAccountName:   'stfunkyfresh001'
+
+steps:
+    - task: AzureCLI@2
+      displayName: 'Create resource group'
+      inputs:
+        azureSubscription: ${{ parameters.azureSubscription }}
+        scriptType: 'batch'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+            az az group create -n $(resourceGroup) -l $(location)
+    
+    - task: AzureCLI@2
+      displayName: 'Create storage account'
+      inputs:
+        azureSubscription: ${{ parameters.azureSubscription }}
+        scriptType: 'batch'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az storage account create `
+            -n $(storageAccountName) `
+            -l $(location) `
+            -g $(resourceGroup) `
+            --sku Standard_LRS
+
+    - task: AzureCLI@2
+      displayName: 'Create app insights'
+      inputs:
+        azureSubscription: ${{ parameters.azureSubscription }}
+        scriptType: 'batch'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az resource create `
+            -g $resourceGroup -n ai-$(appName) `
+            --resource-type "Microsoft.Insights/components" `
+            --properties '{\"Application_Type\":\"web\"}'
+    
+    - task: AzureCLI@2
+      displayName: 'Create functions app'
+      inputs:
+        azureSubscription: ${{ parameters.azureSubscription }}
+        scriptType: 'batch'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az functionapp create `
+            -n $(appName) `
+            --storage-account $(storageAccountName) `
+            --consumption-plan-location $(location) `
+            --app-insights $(appInsightsName) `
+            --runtime python `
+            --fuunctions-version 3 `
+            -g $(resourceGroup)
+
