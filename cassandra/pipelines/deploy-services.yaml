@@ -9,6 +9,9 @@ variables:
   location:             'westus2'
   storageAccountName:   'stfunkyfresh001'
 
+pool:
+  vmImage: 'ubuntu-latest'
+
 steps:
     - task: AzureCLI@2
       displayName: 'Create resource group'
