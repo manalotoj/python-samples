@@ -26,7 +26,7 @@ steps:
       displayName: 'Create storage account'
       inputs:
         azureSubscription: ${{ parameters.azureSubscription }}
-        scriptType: 'batch'
+        scriptType: bash
         scriptLocation: 'inlineScript'
         inlineScript: |
           az storage account create `
@@ -39,7 +39,7 @@ steps:
       displayName: 'Create app insights'
       inputs:
         azureSubscription: ${{ parameters.azureSubscription }}
-        scriptType: 'batch'
+        scriptType: bash
         scriptLocation: 'inlineScript'
         inlineScript: |
           az resource create `
@@ -51,7 +51,7 @@ steps:
       displayName: 'Create functions app'
       inputs:
         azureSubscription: ${{ parameters.azureSubscription }}
-        scriptType: 'batch'
+        scriptType: bash
         scriptLocation: 'inlineScript'
         inlineScript: |
           az functionapp create `
