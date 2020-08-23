@@ -8,15 +8,13 @@ trigger:
       - pipelines
 
 parameters:
-  - name: "sample-param"
-    displayName: "sample param"
+  - name: "azureSubscription"
+    displayName: "Azure Subscription"
     type: string
-    default: "booga"
 
 variables:
   buildConfiguration:   'Release'
   appName:              'funky-fresh'
-  azureSubscription:    'John''s Demo Subscription(2cb5fcdf-b87d-4db5-869b-16c52b971456)'
   resourceGroup:        'rg-aa'
 
 stages:
@@ -70,7 +68,7 @@ stages:
           
           - task: AzureFunctionApp@1
             inputs:
-              azureSubscription: $(azureSubscription)
+              azureSubscription: ${{azureSubscription}}
               appType: functionAppLinux
               appName: $(appName)
               package: $(Pipeline.Workspace)/funcapp/*.zip
