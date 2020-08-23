@@ -70,7 +70,7 @@ stages:
           
           - task: AzureFunctionApp@1
             inputs:
-              azureSubscription: $(aureSubscription)
+              azureSubscription: $(azureSubscription)
               appType: functionAppLinux
               appName: $(appName)
               package: $(Pipeline.Workspace)/webapp1/*.zip
