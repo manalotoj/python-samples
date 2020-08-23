@@ -73,7 +73,7 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: functionAppLinux
               appName: $(appName)
-              package: $(Pipeline.Workspace)/webapp1/*.zip
+              package: $(Pipeline.Workspace)/funcapp/*.zip
               appSettings: |
                 -SOME_KEY1 SOME_VAULE1
                 -SOME_KEY2 SOME_VALUE2
