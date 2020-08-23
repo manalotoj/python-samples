@@ -1,3 +1,6 @@
+pool:
+  vmImage: 'ubuntu-latest'
+
 parameters:
   - name: "azureSubscription"
     displayName: "Azure Subscription"
@@ -9,15 +12,12 @@ variables:
   location:             'westus2'
   storageAccountName:   'stfunkyfresh001'
 
-pool:
-  vmImage: 'ubuntu-latest'
-
 steps:
     - task: AzureCLI@2
       displayName: 'Create resource group'
       inputs:
         azureSubscription: ${{ parameters.azureSubscription }}
-        scriptType: 'batch'
+        scriptType: bash
         scriptLocation: 'inlineScript'
         inlineScript: |
             az group create -n $(resourceGroup) -l $(location)
@@ -29,10 +29,10 @@ steps:
         scriptType: bash
         scriptLocation: 'inlineScript'
         inlineScript: |
-          az storage account create `
-            -n $(storageAccountName) `
-            -l $(location) `
-            -g $(resourceGroup) `
+          az storage account create \
+            -n $(storageAccountName) \
+            -l $(location) \
+            -g $(resourceGroup) \
             --sku Standard_LRS
 
     - task: AzureCLI@2
@@ -42,10 +42,10 @@ steps:
         scriptType: bash
         scriptLocation: 'inlineScript'
         inlineScript: |
-          az resource create `
-            -g $resourceGroup -n ai-$(appName) `
-            --resource-type "Microsoft.Insights/components" `
-            --properties '{\"Application_Type\":\"web\"}'
+          az resource create \
+            -g $(resourceGroup) -n ai-$(appName) \
+            --resource-type "Microsoft.Insights/components" \
+            --properties '{"Application_Type":"web"}'
     
     - task: AzureCLI@2
       displayName: 'Create functions app'
@@ -54,12 +54,11 @@ steps:
         scriptType: bash
         scriptLocation: 'inlineScript'
         inlineScript: |
-          az functionapp create `
-            -n $(appName) `
-            --storage-account $(storageAccountName) `
-            --consumption-plan-location $(location) `
-            --app-insights $(appInsightsName) `
-            --runtime python `
-            --fuunctions-version 3 `
+          az functionapp create \
+            -n $(appName) \
+            --storage-account $(storageAccountName) \
+            --consumption-plan-location $(location) \
+            --app-insights ai-$(appName) \
+            --runtime python \
+            --functions-version 3 \
             -g $(resourceGroup)
-
