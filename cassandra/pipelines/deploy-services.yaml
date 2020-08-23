@@ -20,7 +20,7 @@ steps:
         scriptType: 'batch'
         scriptLocation: 'inlineScript'
         inlineScript: |
-            az az group create -n $(resourceGroup) -l $(location)
+            az group create -n $(resourceGroup) -l $(location)
     
     - task: AzureCLI@2
       displayName: 'Create storage account'
