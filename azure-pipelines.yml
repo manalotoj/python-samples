@@ -1,0 +1,96 @@
+trigger:
+  batch: true
+  branches:
+    include:
+      - master
+  paths:
+    exclude:
+      - pipelines
+
+parameters:
+  - name: "sample-param"
+    displayName: "sample param"
+    type: string
+    default: "booga"
+
+variables:
+  buildConfiguration:   'Release'
+  appName:              'funky-fresh'
+  subscription:         'John''s Demo Subscription(2cb5fcdf-b87d-4db5-869b-16c52b971456)'
+  resourceGroup:        'rg-aa'
+
+stages:
+
+#
+# stage to build solution
+#
+- stage: Build
+  jobs:
+  - job: build
+    pool:
+      vmImage: 'ubuntu-latest'
+        
+    steps:   
+    # set directory path
+    #- script: cd cassandra
+
+    - task: UsePythonVersion@0
+      displayName: 'Use python version'
+      inputs:
+        versionSpec: '3.8.5'
+    
+    - script: pip install -r requirements.txt
+      displayName: 'Install requirements'
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: $(System.DefaultWorkingDirectory)/cassandra
+        includeRootFolder: true
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+        verbose: true
+    
+    - publish: $(System.ArtifactsStagingDirectory)/**/*.zip
+      artifact: funcapp
+
+- stage: DeployToDev
+  jobs:
+  - deployment: devDeployment
+    displayName: 'Deploy to dev'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: dev-env
+    variables:
+      var1: var1value
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          
+          - task: AzureFunctionApp@1
+            inputs:
+              azureSubscription: $(aureSubscription)
+              appType: functionAppLinux
+              appName: $(appName)
+              package: $(Pipeline.Workspace)/webapp1/*.zip
+              appSettings: |
+                -SOME_KEY1 SOME_VAULE1
+                -SOME_KEY2 SOME_VALUE2
+
+          # create app settings for staging slot
+          # app setting is read from key vault via variable group defined outside of pipeline
+#          - task: AzureAppServiceSettings@1
+#            inputs:
+#              azureSubscription: $(azureSubscription)
+#              appName: 'appriss-poc-webapp1'
+#              resourceGroupName: 'rg-appriss-poc'
+#              slotName: 'staging'
+#              appSettings: |
+#                [
+#                   {
+#                    "name": "AppName",
+#                    "value": "$(appname)",
+#                    "slotSetting": false
+#                   }
+#                ]
