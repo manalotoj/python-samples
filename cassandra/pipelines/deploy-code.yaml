@@ -1,0 +1,76 @@
+#trigger:
+#  batch: true
+#  branches:
+#   include:
+#      - master
+#  paths:
+#    exclude:
+#      - pipelines
+
+parameters:
+  - name: "azureSubscription"
+    displayName: "Azure Subscription"
+    type: string
+
+variables:
+  buildConfiguration:   'Release'
+  appName:              'funky-fresh'
+  resourceGroup:        'rg-aa'
+
+stages:
+
+#
+# stage to build solution
+#
+- stage: Build
+  jobs:
+  - job: build
+    pool:
+      vmImage: 'ubuntu-latest'
+        
+    steps:   
+    # set directory path
+    #- script: cd cassandra
+
+    - task: UsePythonVersion@0
+      displayName: 'Use python version'
+      inputs:
+        versionSpec: '3.8.5'
+    
+    - script: pip install -r $(System.DefaultWorkingDirectory)/cassandra/requirements.txt
+      displayName: 'Install requirements'
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: $(System.DefaultWorkingDirectory)/cassandra
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+        verbose: true
+    
+    - publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+      artifact: funcapp
+
+- stage: DeployToDev
+  jobs:
+  - deployment: devDeployment
+    displayName: 'Deploy to dev'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: dev-env
+    variables:
+      var1: var1value
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          
+          - task: AzureFunctionApp@1
+            inputs:
+              azureSubscription: ${{ parameters.azureSubscription }}
+              appType: functionAppLinux
+              appName: $(appName)
+              package: $(Pipeline.Workspace)/funcapp/*.zip
+              appSettings: |
+                -SOME_KEY1 SOME_VAULE1 -SOME_KEY2 SOME_VALUE2
