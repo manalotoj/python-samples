@@ -16,7 +16,7 @@ parameters:
 variables:
   buildConfiguration:   'Release'
   appName:              'funky-fresh'
-  subscription:         'John''s Demo Subscription(2cb5fcdf-b87d-4db5-869b-16c52b971456)'
+  azureSubscription:    'John''s Demo Subscription(2cb5fcdf-b87d-4db5-869b-16c52b971456)'
   resourceGroup:        'rg-aa'
 
 stages:
