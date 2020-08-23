@@ -1,16 +1,21 @@
 from __future__ import print_function
 import datetime
+from datetime import timedelta
 import io
 import os
 import sys
 import time
 import local_config
+import uuid
 try:
     input = raw_input
 except NameError:
     pass
 
 import azure.storage.blob as azureblob
+from azure.storage.blob import ContainerPermissions
+# from azure.storage.blob import ResourceTypes, AccountSasPermissions
+# from azure.storage.blob import generate_account_sas, BlobServiceClient
 import azure.batch.batch_service_client as batch
 import azure.batch.batch_auth as batch_auth
 import azure.batch.models as batchmodels
@@ -22,6 +27,27 @@ sys.path.append('..')
 # Update the Batch and Storage account credential strings in config.py with values
 # unique to your accounts. These are used when constructing connection strings
 # for the Batch and Storage client objects.
+
+def get_container_url(container_name):
+    url = "https://stbatchofcookies.blob.core.windows.net/{0}".format(container_name)
+    return url
+
+def get_secure_container_url(container_name, sas_token):
+    url = "https://stbatchofcookies.blob.core.windows.net/{0}?{1}".format(container_name, sas_token)
+    return url
+
+def create_blob_client():            
+    blob_service_client = azureblob.BlockBlobService(account_name=local_config._BATCH_ACCOUNT_NAME, account_key=local_config._BATCH_ACCOUNT_KEY) #BlobServiceClient.from_connection_string(connection_string)
+    return blob_service_client
+
+# [START create_sas_token]
+def create_sas_token(client, containerName):
+    sas_token = client.generate_container_shared_access_signature(
+            containerName, 
+            ContainerPermissions(write=True, read=True, list=True),
+            expiry=datetime.datetime.utcnow() + timedelta(hours=1), start=datetime.datetime.utcnow() + timedelta(hours=-1), )
+    return sas_token
+# [END create_sas_token]
 
 def query_yes_no(question, default="yes"):
     """
@@ -182,31 +208,37 @@ def create_job(batch_service_client, job_id, pool_id):
     batch_service_client.job.add(job)
 
 
-def add_tasks(batch_service_client, job_id, input_files):
-    """
-    Adds a task for each input file in the collection to the specified job.
-
-    :param batch_service_client: A Batch service client.
-    :type batch_service_client: `azure.batch.BatchServiceClient`
-    :param str job_id: The ID of the job to which to add the tasks.
-    :param list input_files: A collection of input files. One task will be
-     created for each input file.
-    :param output_container_sas_token: A SAS token granting write access to
-    the specified Azure Blob storage container.
-    """
-
-    print('Adding {} tasks to job [{}]...'.format(len(input_files), job_id))
+def add_tasks(batch_service_client, job_id, input_files, output_container):
 
     tasks = list()
 
     for idx, input_file in enumerate(input_files):
 
         command = "cmd /c type {0}".format(input_file.file_path)
-        tasks.append(batch.models.TaskAddParameter(
-            id='Task{}'.format(idx),
-            command_line=command,
-            resource_files=[input_file]
-        )
+        tasks.append(
+            {
+                "id": 'Task{}'.format(idx),
+                "commandLine": command,
+                "resourceFiles": [input_file],
+                "environmentSettings": [],
+                "userIdentity": {
+                    "autoUser": {
+                    "scope": "pool",
+                    "elevationLevel": "nonadmin"
+                    }
+                }
+                ,
+                "outputFiles": [
+                    {
+                    "destination": 
+                        {"container": 
+                            {"containerUrl": output_container}
+                        }, 
+                        "filePattern": "../std*.txt", 
+                        "uploadOptions": {"uploadCondition": "taskcompletion"}
+                    }
+                ]
+            }
         )
 
     batch_service_client.task.add_collection(job_id, tasks)
@@ -301,6 +333,11 @@ if __name__ == '__main__':
     print('Sample start: {}'.format(start_time))
     print()
 
+    # get container sas token
+    blob_service_client = create_blob_client()
+    sas_token = create_sas_token(blob_service_client, 'output')
+    print(sas_token)
+
     # Create the blob client, for use in obtaining references to
     # blob storage containers and uploading files to containers.
 
@@ -338,22 +375,23 @@ if __name__ == '__main__':
         # tasks.
         #create_pool(batch_client, config._POOL_ID)
 
+        jobId = local_config._JOB_ID + "-" + str(uuid.uuid4())
         # Create the job that will run the tasks.
-        create_job(batch_client, local_config._JOB_ID, local_config._POOL_ID)
+        create_job(batch_client, jobId, local_config._POOL_ID)
 
         # Add the tasks to the job.
-        add_tasks(batch_client, local_config._JOB_ID, input_files)
+        add_tasks(batch_client, jobId, input_files, get_secure_container_url("output", sas_token))
 
         # Pause execution until tasks reach Completed state.
         wait_for_tasks_to_complete(batch_client,
-                                   local_config._JOB_ID,
+                                   jobId,
                                    datetime.timedelta(minutes=30))
 
         print("  Success! All tasks reached the 'Completed' state within the "
               "specified timeout period.")
 
         # Print the stdout.txt and stderr.txt files for each task to the console
-        print_task_output(batch_client, local_config._JOB_ID)
+        print_task_output(batch_client, jobId)
 
     except batchmodels.BatchErrorException as err:
         print_batch_exception(err)
@@ -371,8 +409,8 @@ if __name__ == '__main__':
     print()
 
     # Clean up Batch resources (if the user so chooses).
-    if query_yes_no('Delete job?') == 'yes':
-        batch_client.job.delete(local_config._JOB_ID)
+    #if query_yes_no('Delete job?') == 'yes':
+    batch_client.job.delete(jobId)
 
     # if query_yes_no('Delete pool?') == 'yes':
     #     batch_client.pool.delete(local_config._POOL_ID)

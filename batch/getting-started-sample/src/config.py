@@ -25,3 +25,4 @@ _POOL_NODE_COUNT = 2  # Pool node count
 _POOL_VM_SIZE = 'STANDARD_A1_v2'  # VM Type/Size
 _JOB_ID = 'PythonQuickstartJob'  # Job ID
 _STANDARD_OUT_FILE_NAME = 'stdout.txt'  # Standard Output file
+AZURE_STORAGE_CONNECTION_STRING = ''
